@@ -6,7 +6,7 @@ metadata:
 apiVersion: operators.coreos.com/v1
 kind: OperatorGroup
 metadata:
-  name: openshift-external-secrets-operator
+  name: openshift-secrets-operator
   namespace: external-secrets-operator
 spec:
   targetNamespaces: []                     # vuoto = l'operatore lavora su tutti i namespace
