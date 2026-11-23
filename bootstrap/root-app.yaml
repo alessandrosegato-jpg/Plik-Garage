@@ -11,7 +11,7 @@ spec:
   project: default
   source:
     repoURL: https://github.com/ORG/plik-ha-openshift.git
-    targetRevision: develop
+    targetRevision: main
     path: apps
     directory:
       recurse: true

@@ -10,7 +10,7 @@ spec:
   project: default
   source:
     repoURL: https://github.com/ORG/plik-ha-openshift.git
-    targetRevision: develop
+    targetRevision: main
     path: apps/operators
   destination:
     server: https://kubernetes.default.svc
