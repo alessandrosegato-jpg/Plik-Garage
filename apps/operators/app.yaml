@@ -9,7 +9,7 @@ metadata:
 spec:
   project: default
   source:
-    repoURL: https://github.com/ORG/plik-ha-openshift.git
+    repoURL: https://github.com/alessandrosegato-jpg/Plik-Garage.git
     targetRevision: main
     path: apps/operators
   destination:
