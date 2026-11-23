@@ -1,0 +1,30 @@
+# App-of-Apps root: legge SOLO i file app*.yaml dentro le cartelle di apps/
+# (apps/operators/app.yaml, apps/plik/app-dev.yaml, ...). Il resto di ogni cartella
+# (kustomization e manifest) lo legge l'Application di quella cartella.
+# Sostituire repoURL prima di applicare.
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: root
+  namespace: openshift-gitops
+spec:
+  project: default
+  source:
+    repoURL: https://github.com/ORG/plik-ha-openshift.git
+    targetRevision: develop
+    path: apps
+    directory:
+      recurse: true
+      include: "*/app*.yaml"
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: openshift-gitops
+  syncPolicy:
+    automated:
+      prune: false
+      selfHeal: true
+    syncOptions:
+      - ServerSideApply=true
+    retry:
+      limit: 5
+      backoff: { duration: 20s, factor: 2, maxDuration: 3m }
