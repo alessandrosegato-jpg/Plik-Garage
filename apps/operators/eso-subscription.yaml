@@ -6,9 +6,10 @@ metadata:
 apiVersion: operators.coreos.com/v1
 kind: OperatorGroup
 metadata:
-  name: external-secrets-operator
+  name: openshift-external-secrets-operator
   namespace: external-secrets-operator
-spec: {}            # niente targetNamespaces: install mode AllNamespaces
+spec:
+  targetNamespaces: []                     # vuoto = l'operatore lavora su tutti i namespace
 ---
 apiVersion: operators.coreos.com/v1alpha1
 kind: Subscription
@@ -16,8 +17,8 @@ metadata:
   name: openshift-external-secrets-operator
   namespace: external-secrets-operator
 spec:
-  name: openshift-external-secrets-operator   # nome del pacchetto
-  source: redhat-operators                    # catalogo
-  sourceNamespace: openshift-marketplace
   channel: stable-v1
+  name: openshift-external-secrets-operator
+  source: redhat-operators
+  sourceNamespace: openshift-marketplace
   installPlanApproval: Automatic
