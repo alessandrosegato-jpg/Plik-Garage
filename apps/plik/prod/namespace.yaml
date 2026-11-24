@@ -3,4 +3,4 @@ kind: Namespace
 metadata:
   name: plik-prod
   labels:
-    argo.argoproj.io/instance: openshift-gitops
+    argocd.argoproj.io/managed-by: openshift-gitops
