@@ -9,7 +9,7 @@ spec:
   project: default
   source:
     repoURL: https://github.com/alessandrosegato-jpg/Plik-Garage.git
-    targetRevision: develop                   # dev segue develop
+    targetRevision: main                
     path: apps/plik/prod
   destination:
     server: https://kubernetes.default.svc

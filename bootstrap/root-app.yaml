@@ -11,7 +11,7 @@ spec:
   project: default
   source:
     repoURL: https://github.com/alessandrosegato-jpg/Plik-Garage.git
-    targetRevision: develop
+    targetRevision: main
     path: apps
     directory:
       recurse: true
