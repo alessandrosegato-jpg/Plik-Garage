@@ -7,3 +7,5 @@ resources:
   - secrets-serviceaccount.yaml
   - secrets-secretstore.yaml
   - secrets-externalsecrets.yaml
+  - postgres-cluster.yaml
+  - postgres-pooler.yaml
