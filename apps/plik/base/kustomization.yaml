@@ -4,3 +4,6 @@ resources:
   - policies-quota.yaml
   - policies-limitrange.yaml
   - policies-networkpolicy.yaml
+  - secrets-serviceaccount.yaml
+  - secrets-secretstore.yaml
+  - secrets-externalsecrets.yaml
