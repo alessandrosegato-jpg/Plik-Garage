@@ -1,0 +1,25 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: platform
+  namespace: openshift-gitops
+  annotations:
+    argocd.argoproj.io/sync-wave: "2"        # dopo "operators" (wave 1)
+spec:
+  project: default
+  source:
+    repoURL: https://github.com/alessandrosegato-jpg/Plik-Garage.git
+    targetRevision: main
+    path: apps/platform
+  destination:
+    server: https://kubernetes.default.svc
+  syncPolicy:
+    automated:
+      prune: false
+      selfHeal: true
+    syncOptions:
+      - ServerSideApply=true
+      - SkipDryRunOnMissingResource=true     # non fallire se una CRD non esiste ancora
+    retry:
+      limit: 10
+      backoff: { duration: 30s, factor: 2, maxDuration: 5m }

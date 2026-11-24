@@ -1,0 +1,10 @@
+# Attiva il monitoring dei workload utente: Prometheus raccoglie
+# anche le metriche dei namespace delle app (ServiceMonitor, PodMonitor, alert).
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: cluster-monitoring-config
+  namespace: openshift-monitoring
+data:
+  config.yaml: |
+    enableUserWorkload: true
