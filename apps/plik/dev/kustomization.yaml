@@ -4,3 +4,5 @@ namespace: plik-dev
 resources:
   - namespace.yaml
   - ../base
+patches:
+  - path: patch-secretstore.yaml

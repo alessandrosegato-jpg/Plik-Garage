@@ -6,3 +6,4 @@ resources:
   - ../base
 patches:
   - path: patch-quota.yaml
+  - path: patch-secretstore.yaml
