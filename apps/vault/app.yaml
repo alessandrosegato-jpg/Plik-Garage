@@ -16,7 +16,7 @@ spec:
         valueFiles:
           - $values/apps/vault/values.yaml
     - repoURL: https://github.com/alessandrosegato-jpg/Plik-Garage.git
-      targetRevision: develop
+      targetRevision: main
       ref: values
       path: apps/vault
   destination:
