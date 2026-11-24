@@ -10,7 +10,7 @@ spec:
   project: default
   source:
     repoURL: https://github.com/alessandrosegato-jpg/Plik-Garage.git
-    targetRevision: main
+    targetRevision: develop
     path: apps/operators
   destination:
     server: https://kubernetes.default.svc

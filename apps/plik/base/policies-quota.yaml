@@ -1,0 +1,21 @@
+apiVersion: v1
+kind: ResourceQuota
+metadata:
+  name: plik-quota
+  annotations:
+    argocd.argoproj.io/sync-wave: "-2"   # dopo il namespace (-3), prima dei segreti (-1)
+spec:
+  hard:
+    # calcolo: somma delle requests/limits di tutti i container
+    requests.cpu: "1"
+    requests.memory: 2Gi
+    limits.cpu: "3"
+    limits.memory: 3Gi
+    # storage
+    persistentvolumeclaims: "5"
+    requests.storage: 10Gi
+    lvms-vg1.storageclass.storage.k8s.io/requests.storage: 10Gi
+    # oggetti
+    pods: "10"
+    services.loadbalancers: "0"
+    services.nodeports: "0"

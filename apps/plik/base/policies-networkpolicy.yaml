@@ -1,0 +1,139 @@
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: default-deny-ingress
+  annotations:
+    argocd.argoproj.io/sync-wave: "-2"
+spec:
+  podSelector: {}
+  policyTypes: [Ingress]
+---
+# 1. Router -> Plik
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: allow-router-to-plik
+  annotations:
+    argocd.argoproj.io/sync-wave: "-2"
+spec:
+  podSelector:
+    matchLabels:
+      app.kubernetes.io/name: plik            # label del tuo chart
+  policyTypes: [Ingress]
+  ingress:
+    - from:
+        - namespaceSelector:
+            matchLabels:
+              network.openshift.io/policy-group: ingress
+      ports:
+        - port: 8080
+---
+# 2. Plik -> Pooler
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: allow-plik-to-pooler
+  annotations:
+    argocd.argoproj.io/sync-wave: "-2"
+spec:
+  podSelector:
+    matchLabels:
+      cnpg.io/poolerName: plik-db-pooler-rw
+  policyTypes: [Ingress]
+  ingress:
+    - from:
+        - podSelector:
+            matchLabels:
+              app.kubernetes.io/name: plik
+      ports:
+        - port: 5432
+---
+# 3-4. Pooler, repliche e operatore -> PostgreSQL
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: allow-to-postgres
+  annotations:
+    argocd.argoproj.io/sync-wave: "-2"
+spec:
+  podSelector:
+    matchLabels:
+      cnpg.io/cluster: plik-db
+      cnpg.io/podRole: instance
+  policyTypes: [Ingress]
+  ingress:
+    - from:
+        - podSelector:
+            matchLabels:
+              cnpg.io/poolerName: plik-db-pooler-rw
+        - podSelector:                          # replica tra istanze
+            matchLabels:
+              cnpg.io/cluster: plik-db
+      ports:
+        - port: 5432
+    - from:
+        - namespaceSelector:
+            matchLabels:
+              kubernetes.io/metadata.name: cnpg-system   # namespace dell'operatore CNPG
+      ports:
+        - port: 5432
+        - port: 8000
+---
+# 5-7. Garage
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: allow-to-garage
+  annotations:
+    argocd.argoproj.io/sync-wave: "-2"
+spec:
+  podSelector:
+    matchLabels:
+      app.kubernetes.io/name: garage
+  policyTypes: [Ingress]
+  ingress:
+    - from:                                     # S3
+        - podSelector:
+            matchLabels:
+              app.kubernetes.io/name: plik
+        - podSelector:
+            matchLabels:
+              app.kubernetes.io/name: garage-bootstrap
+        - podSelector:
+            matchLabels:
+              app.kubernetes.io/name: garage-backup   # CronJob rclone, esiste solo in prod
+      ports:
+        - port: 3900
+    - from:                                     # RPC tra i nodi Garage
+        - podSelector:
+            matchLabels:
+              app.kubernetes.io/name: garage
+      ports:
+        - port: 3901
+    - from:                                     # admin API
+        - podSelector:
+            matchLabels:
+              app.kubernetes.io/name: garage-bootstrap
+      ports:
+        - port: 3903
+---
+# 8. Monitoring di OpenShift -> metriche
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: allow-from-monitoring
+  annotations:
+    argocd.argoproj.io/sync-wave: "-2"
+spec:
+  podSelector: {}
+  policyTypes: [Ingress]
+  ingress:
+    - from:
+        - namespaceSelector:
+            matchLabels:
+              network.openshift.io/policy-group: monitoring
+      ports:
+        - port: 9187    # CNPG istanze
+        - port: 9127    # Pooler
+        - port: 3903    # Garage /metrics
+        - port: 8080    # Plik (verificare la porta delle metriche)
