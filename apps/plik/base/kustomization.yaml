@@ -7,3 +7,7 @@ resources:
   - secrets-serviceaccount.yaml
   - secrets-secretstore.yaml
   - secrets-externalsecrets.yaml
+  - garage-rbac.yaml
+  - garage-service.yaml
+  - garage-statefulset.yaml
+  - garage-db.yaml

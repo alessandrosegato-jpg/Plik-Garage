@@ -4,5 +4,9 @@ namespace: plik-dev
 resources:
   - namespace.yaml
   - ../base
+configMapGenerator:
+  - name: garage-config
+    files:
+      - garage.toml
 patches:
   - path: patch-secretstore.yaml
