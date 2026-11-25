@@ -70,6 +70,36 @@ route:
     # Il router di default chiude le richieste dopo 30s: un upload grande verrebbe interrotto con un 504.
     haproxy.router.openshift.io/timeout: 10m
 
+# -- Probe del container. Da verificare sul pod quando Postgres e Garage ci sono:
+# cosa controlla davvero /health (vedi README del task 1.9).
+probes:
+  # -- Startup: protegge il primo avvio (migrazione dello schema su Postgres).
+  # Finché non passa, readiness e liveness non partono. Fino a 24 x 5s = 2 minuti.
+  startup:
+    httpGet:
+      path: /health
+      port: http
+    periodSeconds: 5
+    timeoutSeconds: 3
+    failureThreshold: 24
+  # -- Readiness: se fallisce, il pod esce dal Service e dalla Route, ma non viene riavviato.
+  readiness:
+    httpGet:
+      path: /health
+      port: http
+    periodSeconds: 10
+    timeoutSeconds: 3
+    failureThreshold: 3
+  # -- Liveness: se fallisce, il pod viene riavviato. Usa un endpoint che non dipende
+  # dal database, così un problema di Postgres non fa riavviare tutti i pod insieme.
+  liveness:
+    httpGet:
+      path: /version
+      port: http
+    periodSeconds: 20
+    timeoutSeconds: 3
+    failureThreshold: 3
+
 # -- CPU/memory resource requests and limits
 resources: {}
   # We usually recommend not to specify default resources and to leave this as a conscious
