@@ -6,3 +6,10 @@ resources:
   - ../base
 patches:
   - path: patch-secretstore.yaml
+helmGlobals:
+  chartHome: ../charts
+helmCharts:
+  - name: plik
+    releaseName: plik
+    namespace: plik-dev
+    valuesFile: values-plik.yaml

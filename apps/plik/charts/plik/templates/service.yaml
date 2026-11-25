@@ -15,5 +15,11 @@ spec:
       targetPort: http
       protocol: TCP
       name: http
+    {{- if .Values.plikd.MetricsPort }}
+    - port: {{ .Values.plikd.MetricsPort }}
+      targetPort: metrics
+      protocol: TCP
+      name: metrics
+    {{- end }}
   selector:
     {{- include "plik.selectorLabels" . | nindent 4 }}

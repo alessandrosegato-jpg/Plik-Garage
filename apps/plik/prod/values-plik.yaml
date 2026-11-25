@@ -1,0 +1,33 @@
+# Values di Plik per prod. Si sommano a apps/plik/charts/plik/values.yaml:
+# qui solo quello che cambia rispetto ai default del chart. Niente segreti.
+
+# Con l'HPA attivo replicaCount è ignorato: le repliche le decide l'HPA (da 3 a 6).
+autoscaling:
+  enabled: true
+  minReplicas: 3
+  maxReplicas: 6
+  targetCPUUtilizationPercentage: 70
+
+# Durante un drain restano almeno 2 repliche su 3 (task 2.1).
+podDisruptionBudget:
+  enabled: true
+  minAvailable: 2
+
+# Dentro la ResourceQuota di plik-prod (requests 3 CPU / 5Gi, limits 10 CPU / 8Gi),
+# contando 6 repliche di Plik più Postgres, Pooler e Garage.
+# Da rivedere con il load test (task 3.4).
+resources:
+  requests:
+    cpu: 200m
+    memory: 256Mi
+  limits:
+    cpu: "1"
+    memory: 512Mi
+
+networkPolicy:
+  enabled: true
+
+plikd:
+  MaxFileSizeStr: "10GB"
+  DefaultTTLStr: "7d"
+  MaxTTLStr: "30d"

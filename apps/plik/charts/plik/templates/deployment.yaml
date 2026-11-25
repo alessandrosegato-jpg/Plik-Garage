@@ -39,6 +39,11 @@ spec:
             - name: http
               containerPort: 8080
               protocol: TCP
+            {{- if .Values.plikd.MetricsPort }}
+            - name: metrics
+              containerPort: {{ .Values.plikd.MetricsPort }}
+              protocol: TCP
+            {{- end }}
           {{- with .Values.probes.startup }}
           startupProbe:
             {{- toYaml . | nindent 12 }}

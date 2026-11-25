@@ -114,15 +114,47 @@ resources: {}
   #   memory: 128Mi
 
 autoscaling:
-  # -- Enable Horizontal Pod Autoscaler
+  # -- Attiva l'HorizontalPodAutoscaler. Richiede resources.requests.cpu.
+  # Quando è attivo, replicaCount viene ignorato: le repliche le decide l'HPA.
   enabled: false
-  # -- Minimum number of replicas
-  minReplicas: 1
-  # -- Maximum number of replicas
-  maxReplicas: 100
-  # -- Target CPU utilization percentage
-  targetCPUUtilizationPercentage: 80
+  # -- Repliche minime
+  minReplicas: 2
+  # -- Repliche massime: tenere conto della capacità del nodo e della ResourceQuota (pods)
+  maxReplicas: 6
+  # -- Uso medio della CPU, in percentuale della request, oltre il quale si aggiungono repliche
+  targetCPUUtilizationPercentage: 70
   # targetMemoryUtilizationPercentage: 80
+
+# -- PodDisruptionBudget: quante repliche devono restare su durante le interruzioni
+# volontarie (drain del nodo, aggiornamenti). Non protegge dai crash.
+podDisruptionBudget:
+  enabled: false
+  # -- Repliche che devono restare disponibili. Deve essere minore delle repliche,
+  # altrimenti il drain del nodo resta bloccato.
+  minAvailable: 1
+  # -- In alternativa a minAvailable (se impostato, ha la precedenza)
+  maxUnavailable: ""
+
+# -- NetworkPolicy in USCITA per i pod di Plik. L'ingresso (router, monitoring) lo
+# gestiscono le NetworkPolicy di namespace del task 1.5 (apps/plik/base/policies-*).
+networkPolicy:
+  enabled: false
+  # -- Pooler di PostgreSQL (task 1.6)
+  postgres:
+    podSelector:
+      cnpg.io/poolerName: plik-db-pooler-rw
+    port: 5432
+  # -- API S3 di Garage (task 1.7)
+  garage:
+    podSelector:
+      app.kubernetes.io/name: garage
+    port: 3900
+
+# -- ServiceMonitor per il monitoring dei workload utente. Richiede plikd.MetricsPort diverso da 0:
+# Plik espone /metrics su una porta separata.
+serviceMonitor:
+  enabled: false
+  interval: 30s
 
 # -- Node selector for pod scheduling
 nodeSelector: {}
@@ -152,6 +184,7 @@ plikd:
   # -- HTTP listen address
   ListenAddress: "0.0.0.0"
   # -- Prometheus metrics port (0 = disabled)
+  # Se diverso da 0, il chart aggiunge la porta "metrics" al container e al Service.
   MetricsPort: 0
   # -- Prometheus metrics listen address
   MetricsAddress: "0.0.0.0"

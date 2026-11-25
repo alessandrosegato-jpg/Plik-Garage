@@ -7,3 +7,10 @@ resources:
 patches:
   - path: patch-quota.yaml
   - path: patch-secretstore.yaml
+helmGlobals:
+  chartHome: ../charts
+helmCharts:
+  - name: plik
+    releaseName: plik
+    namespace: plik-prod
+    valuesFile: values-plik.yaml
