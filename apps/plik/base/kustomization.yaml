@@ -11,3 +11,8 @@ resources:
   - garage-service.yaml
   - garage-statefulset.yaml
   - garage-db.yaml
+configMapGenerator:
+  # Lo script del job diventa un ConfigMap garage-bootstrap-script-<hash>
+  - name: garage-bootstrap-script
+    files:
+      - garage-bootstrap.py
