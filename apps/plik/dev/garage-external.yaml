@@ -1,0 +1,50 @@
+# Segreti di Garage e di Plik, letti da Vault tramite External Secrets Operator.
+# Lo store "vault" (ClusterSecretStore) lo crea il task #49: il nome va concordato.
+#
+# Finché #49 non è pronto questo file NON è nella kustomization: in dev si usano
+# Secret creati a mano (vedi docs/garage-segreti.md). Prima di attivarlo,
+# cancellare quei Secret: ESO crea e possiede i Secret che gestisce.
+apiVersion: external-secrets.io/v1
+kind: ExternalSecret
+metadata:
+  name: garage
+  annotations:
+    argocd.argoproj.io/sync-wave: "-1"   # prima del StatefulSet e del job
+spec:
+  refreshInterval: 1h
+  secretStoreRef:
+    kind: ClusterSecretStore
+    name: vault
+  target:
+    name: garage            # letto dal StatefulSet e dal job garage-bootstrap
+    creationPolicy: Owner
+    deletionPolicy: Retain  # se Vault non risponde, il Secret resta
+  data:
+    - secretKey: rpc-secret       # 64 caratteri esadecimali, uguale su tutti i nodi
+      remoteRef: {key: plik-dev/garage, property: rpc-secret}
+    - secretKey: admin-token      # token dell'admin API (porta 3903)
+      remoteRef: {key: plik-dev/garage, property: admin-token}
+    - secretKey: metrics-token    # token per /metrics (Prometheus, fase 3)
+      remoteRef: {key: plik-dev/garage, property: metrics-token}
+---
+apiVersion: external-secrets.io/v1
+kind: ExternalSecret
+metadata:
+  name: s3
+  annotations:
+    argocd.argoproj.io/sync-wave: "-1"
+spec:
+  refreshInterval: 1h
+  secretStoreRef:
+    kind: ClusterSecretStore
+    name: vault
+  target:
+    name: s3                # chiave S3 di Plik: la importa il job, la usa Plik
+    creationPolicy: Owner
+    deletionPolicy: Retain
+  data:
+    - secretKey: access-key-id      # formato Garage: "GK" + 24 caratteri esadecimali
+      remoteRef: {key: plik-dev/s3, property: access-key-id}
+    - secretKey: secret-access-key  # 64 caratteri esadecimali
+      remoteRef: {key: plik-dev/s3, property: secret-access-key}
+

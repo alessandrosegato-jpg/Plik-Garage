@@ -1,0 +1,36 @@
+# Configurazione Garage per l'ambiente dev: 1 nodo, nessuna replica.
+# Verificata sui campi di Garage v2.5.0 (dxflrs/garage:v2.5.0).
+#
+# Secrets NON presenti qui: arrivano come variabili d'ambiente dal Secret
+# sincronizzato da Vault (plik-dev/garage):
+#   GARAGE_RPC_SECRET    -> rpc_secret   (32 byte in esadecimale, 64 caratteri)
+#   GARAGE_ADMIN_TOKEN   -> admin_token  (usato dal job garage-bootstrap)
+#   GARAGE_METRICS_TOKEN -> metrics_token (per Prometheus, fase 3)
+
+# Dove Garage tiene metadati (DB) e blocchi dei file: due PVC del StatefulSet.
+metadata_dir = "/var/lib/garage/meta"
+data_dir     = "/var/lib/garage/data"
+db_engine    = "lmdb"
+
+# Snapshot periodico del DB dei metadati dentro metadata_dir:
+# permette di recuperare se LMDB si corrompe (es. nodo spento male).
+metadata_auto_snapshot_interval = "6h"
+
+# Dev: un solo nodo, quindi una sola copia di ogni oggetto.
+# In prod sarà 3 (con almeno 3 nodi in zone diverse).
+replication_factor = 1
+consistency_mode   = "consistent"
+
+# Porta RPC tra i nodi Garage (con 1 nodo serve comunque a CLI e layout).
+rpc_bind_addr = "0.0.0.0:3901"
+
+[s3_api]
+# Plik deve usare la stessa region nella sua configurazione S3.
+s3_region     = "garage"
+api_bind_addr = "0.0.0.0:3900"
+# Niente root_domain: Plik usa lo stile path (http://garage:3900/plik/...).
+
+[admin]
+# Admin API v2 (/v2/...): la usa il job di bootstrap; /health per le probe.
+api_bind_addr = "0.0.0.0:3903"
+
