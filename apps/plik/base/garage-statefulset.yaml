@@ -1,0 +1,106 @@
+# Garage come StatefulSet: ogni pod ha un nome stabile (garage-0, garage-1...) e
+# i suoi PVC, che lo seguono se viene rischedulato. Garage salva l'ID del nodo
+# in metadata_dir: se perdesse il volume diventerebbe un nodo "nuovo" per il layout.
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: garage
+  labels:
+    app.kubernetes.io/name: garage
+    app.kubernetes.io/part-of: plik
+spec:
+  serviceName: garage-headless
+  replicas: 1                       # dev; in prod l'overlay lo porta a 3
+  podManagementPolicy: Parallel     # i nodi partono insieme: si trovano via RPC
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: garage
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: garage
+        app.kubernetes.io/part-of: plik
+    spec:
+      serviceAccountName: garage
+      automountServiceAccountToken: false   # Garage non parla con l'API Kubernetes
+      terminationGracePeriodSeconds: 30
+      # Nessun runAsUser/fsGroup: li assegna OpenShift (SCC restricted-v2).
+      securityContext:
+        runAsNonRoot: true
+        seccompProfile:
+          type: RuntimeDefault
+      affinity:
+        podAntiAffinity:            # in prod: un nodo Garage per worker, se possibile
+          preferredDuringSchedulingIgnoredDuringExecution:
+            - weight: 100
+              podAffinityTerm:
+                topologyKey: kubernetes.io/hostname
+                labelSelector:
+                  matchLabels:
+                    app.kubernetes.io/name: garage
+      containers:
+        - name: garage
+          # v2.5.0 bloccata per digest (indice multi-arch): stesso contenuto a ogni pull.
+          image: docker.io/dxflrs/garage:v2.5.0@sha256:677e5b758e4425a325b811c425c026bf35a4bf42f7ddbaa773de3f4fd779a5a5
+          # L'immagine avvia già "/garage server"; diciamo solo dove sta il file.
+          env:
+            - name: GARAGE_CONFIG_FILE
+              value: /etc/garage/garage.toml
+            - name: GARAGE_RPC_SECRET
+              valueFrom:
+                secretKeyRef: {name: garage, key: rpc-secret}
+            - name: GARAGE_ADMIN_TOKEN
+              valueFrom:
+                secretKeyRef: {name: garage, key: admin-token}
+            - name: GARAGE_METRICS_TOKEN
+              valueFrom:
+                secretKeyRef: {name: garage, key: metrics-token}
+          ports:
+            - {name: s3, containerPort: 3900}
+            - {name: rpc, containerPort: 3901}
+            - {name: admin, containerPort: 3903}
+          # Liveness solo TCP: prima del bootstrap /health risponde 503 e una
+          # liveness HTTP farebbe riavviare il pod all'infinito.
+          livenessProbe:
+            tcpSocket: {port: admin}
+            initialDelaySeconds: 10
+            periodSeconds: 20
+          # Readiness su /health: Ready solo quando il nodo può servire richieste
+          # (layout applicato e quorum raggiunto). Così Plik non riceve errori.
+          readinessProbe:
+            httpGet: {path: /health, port: admin}
+            periodSeconds: 10
+            failureThreshold: 3
+          resources:
+            requests: {cpu: 100m, memory: 256Mi}
+            limits: {memory: 1Gi}
+          securityContext:
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            capabilities:
+              drop: ["ALL"]
+          volumeMounts:
+            - {name: config, mountPath: /etc/garage, readOnly: true}
+            - {name: meta, mountPath: /var/lib/garage/meta}
+            - {name: data, mountPath: /var/lib/garage/data}
+            - {name: tmp, mountPath: /tmp}
+      volumes:
+        - name: config
+          configMap:
+            name: garage-config     # generato dall'overlay (dev/garage.toml)
+        - name: tmp
+          emptyDir: {}
+  volumeClaimTemplates:
+    - metadata:
+        name: meta                  # DB LMDB dei metadati: piccolo ma critico
+      spec:
+        accessModes: ["ReadWriteOnce"]
+        resources:
+          requests: {storage: 1Gi}
+    - metadata:
+        name: data                  # blocchi dei file caricati su Plik
+      spec:
+        accessModes: ["ReadWriteOnce"]
+        resources:
+          requests: {storage: 10Gi}
+

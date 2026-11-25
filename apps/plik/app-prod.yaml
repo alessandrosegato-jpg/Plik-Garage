@@ -9,15 +9,12 @@ spec:
   project: default
   source:
     repoURL: https://github.com/alessandrosegato-jpg/Plik-Garage.git
-    targetRevision: develop                   # dev segue develop
+    targetRevision: main                
     path: apps/plik/prod
   destination:
     server: https://kubernetes.default.svc
     namespace: plik-prod                       # uguale al namespace: del kustomization
   syncPolicy:
-    automated:                                # sync automatica
-      prune: true                             # file tolto da Git -> risorsa cancellata
-      selfHeal: true                          # modifica a mano sul cluster -> riallineata
     syncOptions:
       - SkipDryRunOnMissingResource=true      # CRD degli operatori (Cluster, ExternalSecret...)
     retry:

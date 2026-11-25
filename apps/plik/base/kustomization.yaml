@@ -9,3 +9,12 @@ resources:
   - secrets-externalsecrets.yaml
   - postgres-cluster.yaml
   - postgres-pooler.yaml
+  - garage-rbac.yaml
+  - garage-service.yaml
+  - garage-statefulset.yaml
+  - garage-pdb.yaml
+  - garage-bootstrap-job.yaml
+configMapGenerator:
+  - name: garage-bootstrap-script
+    files:
+      - garage-bootstrap.py

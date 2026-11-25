@@ -1,0 +1,19 @@
+# Limita le interruzioni volontarie (drain dei nodi, aggiornamenti del cluster).
+#
+# maxUnavailable: 1 invece di minAvailable:
+# - dev (1 replica): il drain è permesso. Con minAvailable: 1 il drain di quel
+#   nodo resterebbe bloccato per sempre e gli aggiornamenti di OpenShift si fermerebbero.
+# - prod (3 repliche, replication_factor 3): al massimo un nodo giù alla volta,
+#   così restano 2 copie su 3, che bastano per il quorum di letture e scritture.
+apiVersion: policy/v1
+kind: PodDisruptionBudget
+metadata:
+  name: garage
+  labels:
+    app.kubernetes.io/name: garage
+    app.kubernetes.io/part-of: plik
+spec:
+  maxUnavailable: 1
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: garage
