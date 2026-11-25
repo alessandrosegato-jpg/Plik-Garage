@@ -1,0 +1,6 @@
+Plik {{ .Chart.AppVersion }} installato nel namespace {{ .Release.Namespace }}.
+
+Credenziali lette dal Secret: {{ include "plik.secretName" . }}
+
+Indirizzo pubblico:
+  oc get route -n {{ .Release.Namespace }} {{ include "plik.fullname" . }}

@@ -1,0 +1,275 @@
+# Default values for plik.
+# This is a YAML-formatted file.
+# Declare variables to be passed into your templates.
+
+# -- Number of pod replicas
+replicaCount: 1
+
+image:
+  # -- Docker image repository
+  repository: rootgg/plik
+  # -- Image pull policy
+  pullPolicy: IfNotPresent
+  # -- Overrides the image tag whose default is the chart appVersion
+  tag: ""
+
+# -- Docker registry pull secrets
+imagePullSecrets: []
+# -- Override the chart name
+nameOverride: ""
+# -- Override the full release name
+fullnameOverride: ""
+
+serviceAccount:
+  # -- Specifies whether a service account should be created
+  create: true
+  # -- Automatically mount the service account token
+  automount: false
+  # -- Annotations to add to the service account
+  annotations: {}
+  # -- The name of the service account to use.
+  # If not set and create is true, a name is generated using the fullname template
+  name: ""
+
+# -- Additional pod annotations
+podAnnotations: {}
+
+# -- Pod-level security context, compatibile con la SCC restricted-v2.
+# Niente runAsUser, runAsGroup o fsGroup: li assegna OpenShift dal range del namespace.
+podSecurityContext:
+  runAsNonRoot: true
+  seccompProfile:
+    type: RuntimeDefault
+
+# -- Container-level security context, compatibile con la SCC restricted-v2.
+securityContext:
+  allowPrivilegeEscalation: false
+  readOnlyRootFilesystem: true
+  capabilities:
+    drop:
+      - ALL
+
+# -- Dimensione massima della directory temporanea /tmp (emptyDir), unica parte scrivibile del container
+tmpSizeLimit: 256Mi
+
+service:
+  # -- Kubernetes Service type
+  type: ClusterIP
+  # -- Service port
+  port: 8080
+  # -- Additional service annotations
+  annotations: {}
+
+# -- Route di OpenShift: TLS terminato sul router (edge), HTTP rediretto su HTTPS.
+route:
+  enabled: true
+  # -- Host pubblico. Vuoto = lo genera OpenShift (<nome>-<namespace>.<dominio del cluster>).
+  # Deve coincidere con plikd.PlikDomain (senza https://).
+  host: ""
+  annotations:
+    # Il router di default chiude le richieste dopo 30s: un upload grande verrebbe interrotto con un 504.
+    haproxy.router.openshift.io/timeout: 10m
+
+# -- CPU/memory resource requests and limits
+resources: {}
+  # We usually recommend not to specify default resources and to leave this as a conscious
+  # choice for the user. This also increases chances charts run on environments with little
+  # resources, such as Minikube. If you do want to specify resources, uncomment the following
+  # lines, adjust them as necessary, and remove the curly braces after 'resources'.
+  # limits:
+  #   cpu: 100m
+  #   memory: 128Mi
+  # requests:
+  #   cpu: 100m
+  #   memory: 128Mi
+
+autoscaling:
+  # -- Enable Horizontal Pod Autoscaler
+  enabled: false
+  # -- Minimum number of replicas
+  minReplicas: 1
+  # -- Maximum number of replicas
+  maxReplicas: 100
+  # -- Target CPU utilization percentage
+  targetCPUUtilizationPercentage: 80
+  # targetMemoryUtilizationPercentage: 80
+
+# -- Node selector for pod scheduling
+nodeSelector: {}
+
+# -- Tolerations for pod scheduling
+tolerations: []
+
+# -- Affinity rules for pod scheduling
+affinity: {}
+
+# Plik specific configuration
+# This section mirrors the plikd.cfg configuration file
+
+# -- Plik server configuration. Values are rendered into the `plikd.cfg` config file.
+# See [server configuration reference](https://github.com/root-gg/plik/tree/master/server/plikd.cfg) for all options.
+# @default -- see sub-values
+plikd:
+  # -- Enable debug mode
+  Debug: false
+  # -- Log every HTTP request
+  DebugRequests: false
+  # -- Log level (`DEBUG`, `INFO`, `WARNING`, `CRITICAL`)
+  LogLevel: "INFO"
+
+  # -- HTTP listen port
+  ListenPort: 8080
+  # -- HTTP listen address
+  ListenAddress: "0.0.0.0"
+  # -- Prometheus metrics port (0 = disabled)
+  MetricsPort: 0
+  # -- Prometheus metrics listen address
+  MetricsAddress: "0.0.0.0"
+  # -- URL path prefix (e.g. `/plik`)
+  Path: ""
+  # -- Enable HTTPS
+  SslEnabled: false
+  # -- Path to TLS certificate
+  SslCert: "plik.crt"
+  # -- Path to TLS private key
+  SslKey: "plik.key"
+  # -- Minimum TLS version (`tlsv10`, `tlsv11`, `tlsv12`, `tlsv13`)
+  TlsVersion: "tlsv10"
+  # -- Disable the web interface
+  NoWebInterface: false
+  # -- Public webapp URL for OAuth redirects, CORS, and download domain redirects (e.g., `https://plik.example.com`)
+  PlikDomain: ""
+  # -- Custom download domain
+  DownloadDomain: ""
+  # -- Additional download domain aliases
+  DownloadDomainAlias: []
+  # -- Deprecated: use AssumeHTTPS instead. Kept for backward compatibility — if true, enables AssumeHTTPS with a deprecation warning at startup.
+  EnhancedWebSecurity: false
+  # -- Enable HSTS and Secure cookies (auto-enabled when SslEnabled=true or PlikDomain starts with https://)
+  # Su OpenShift il TLS termina sulla Route: Plik riceve HTTP ma deve generare link https e cookie Secure.
+  AssumeHTTPS: true
+  # -- User session timeout (e.g. `365d`, `24h`)
+  SessionTimeout: "365d"
+  # -- Abuse contact email displayed in the footer
+  AbuseContact: ""
+  # -- Path to the webapp distribution directory
+  WebappDirectory: "../webapp/dist"
+  # -- Path to the pre-built CLI clients directory
+  ClientsDirectory: "../clients"
+  # -- Path to the changelog directory
+  ChangelogDirectory: "../changelog"
+  # -- HTTP header to use for source IP (e.g. `X-Forwarded-For`)
+  # Dietro il router di OpenShift l'IP del client è nell'header X-Forwarded-For.
+  SourceIpHeader: "X-Forwarded-For"
+  # -- IP whitelist for uploads (empty = allow all)
+  UploadWhitelist: []
+
+  # -- Enable zip compression for archive downloads.
+  # When true (default), archives use zip.Deflate (smaller files but higher CPU usage).
+  # Set to false to use zip.Store (no compression) to prevent CPU exhaustion DoS on public instances.
+  EnableArchiveCompression: true
+
+  # -- Maximum file size per upload (e.g. `10GB`, `unlimited`)
+  MaxFileSizeStr: "10GB"
+  # -- Maximum total size per user (e.g. `10GB`, `unlimited`)
+  MaxUserSizeStr: "unlimited"
+  # -- Maximum number of files per upload
+  MaxFilePerUpload: 1000
+
+  # -- Default upload TTL (e.g. `30d`, `24h`)
+  DefaultTTLStr: "30d"
+  # -- Maximum upload TTL
+  MaxTTLStr: "30d"
+
+  # -- Login for the default local admin user to create on first startup (empty = disabled).
+  # Idempotent: skipped if the user already exists.
+  DefaultAdminLogin: ""
+
+  # -- Enable user authentication (`enabled`, `disabled`, `forced`)
+  FeatureAuthentication: "disabled"
+  # -- Enable local login
+  FeatureLocalLogin: "enabled"
+  # -- Allow users to delete their account
+  FeatureDeleteAccount: "enabled"
+  # -- Enable one-shot downloads
+  FeatureOneShot: "enabled"
+  # -- Enable removable uploads
+  FeatureRemovable: "enabled"
+  # -- Enable streaming uploads
+  # Disattivato: in stream mode chi carica e chi scarica devono passare dallo stesso pod,
+  # quindi con più repliche non funziona (task 2.1).
+  FeatureStream: "disabled"
+  # -- Enable password-protected uploads
+  FeaturePassword: "enabled"
+  # -- Enable upload comments
+  FeatureComments: "enabled"
+  # -- Allow users to set a custom TTL
+  FeatureSetTTL: "enabled"
+  # -- Allow users to extend an existing TTL
+  FeatureExtendTTL: "disabled"
+  # -- Enable pre-built CLI clients download page
+  FeatureClients: "enabled"
+  # -- Enable API token creation and usage. When disabled with FeatureAuthentication=forced, FeatureClients is also auto-disabled.
+  FeatureApiTokens: "enabled"
+  # -- Show GitHub link in the footer
+  FeatureGithub: "enabled"
+  # -- Enable plain-text paste mode
+  FeatureText: "enabled"
+
+  # -- Google OAuth2 client ID
+  GoogleApiClientID: ""
+  # -- Allowed Google domains (empty = allow all)
+  GoogleValidDomains: []
+
+  # -- OVH API endpoint (e.g. `ovh-eu`, `ovh-ca`)
+  OvhApiEndpoint: ""
+
+  # -- OpenID Connect client ID
+  OIDCClientID: ""
+  # -- OpenID Connect provider discovery URL
+  OIDCProviderURL: ""
+  # -- Display name for the OIDC provider
+  OIDCProviderName: "OpenID"
+  # -- Allowed OIDC email domains (empty = allow all)
+  OIDCValidDomains: []
+  # -- Require verified email from OIDC provider
+  OIDCRequireVerifiedEmail: false
+
+  # -- GitHub OAuth app client ID
+  GitHubApiClientID: ""
+  # -- Restrict to GitHub organization members (empty = allow all)
+  GitHubValidOrganizations: []
+
+  # -- Data backend: S3 su Garage (task 1.7). I file non stanno nel pod.
+  DataBackend: "s3"
+  # -- Configurazione S3 NON segreta. AccessKeyID e SecretAccessKey arrivano da
+  # PLIKD_DATA_BACKEND_CONFIG (Secret plik-backends) e vengono fusi con questa mappa.
+  # Endpoint, Location e Bucket sono il "contratto" con Garage: Service garage,
+  # porta S3 3900, s3_region di garage.toml, bucket creato dal job di bootstrap.
+  DataBackendConfig:
+    Endpoint: "garage:3900"
+    Bucket: "plik"
+    Location: "garage"
+    UseSSL: false
+    BucketLookup: "path"
+    PartSize: 16777216
+    PartUploadConcurrency: 4
+
+  # -- Metadata backend: PostgreSQL tramite il Pooler di CloudNativePG (task 1.6).
+  # ConnectionString (con la password) arriva da PLIKD_METADATA_BACKEND_CONFIG (Secret plik-backends).
+  # MaxOpenConns limita le connessioni di ogni pod verso il Pooler.
+  MetadataBackendConfig:
+    Driver: "postgres"
+    MaxOpenConns: 10
+    MaxIdleConns: 5
+    Debug: false
+
+# ─── Credenziali ──────────────────────────────────────────────────────────────
+# Il chart NON crea Secret e non accetta credenziali nei values (i values stanno nel repo).
+# Le credenziali arrivano dal Secret creato da External Secrets (apps/plik/base/secrets-externalsecrets.yaml)
+# e diventano variabili d'ambiente con envFrom. Il Secret deve contenere:
+#   PLIKD_DATA_BACKEND_CONFIG      JSON con AccessKeyID e SecretAccessKey, fuso con plikd.DataBackendConfig
+#   PLIKD_METADATA_BACKEND_CONFIG  JSON con ConnectionString, fuso con plikd.MetadataBackendConfig
+secrets:
+  # -- Nome del Secret con le credenziali (obbligatorio)
+  existingSecret: plik-backends
