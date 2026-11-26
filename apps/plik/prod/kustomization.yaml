@@ -7,3 +7,19 @@ resources:
 patches:
   - path: patch-quota.yaml
   - path: patch-secretstore.yaml
+  - target:
+      labelSelector: app.kubernetes.io/instance=plik
+    patch: |-
+      apiVersion: v1
+      kind: ConfigMap
+      metadata:
+        name: plik
+        annotations:
+          argocd.argoproj.io/sync-wave: "2"
+helmGlobals:
+  chartHome: ../charts
+helmCharts:
+  - name: plik
+    releaseName: plik
+    namespace: plik-prod
+    valuesFile: values-plik.yaml

@@ -1,0 +1,26 @@
+# Values di Plik per dev. Si sommano a apps/plik/charts/plik/values.yaml:
+# qui solo quello che cambia rispetto ai default del chart. Niente segreti.
+
+# Una replica basta in dev: niente HPA né PDB.
+replicaCount: 1
+
+# Dentro la ResourceQuota di plik-dev (requests 1 CPU / 2Gi, limits 3 CPU / 3Gi)
+# e sotto il massimo della LimitRange (1 CPU / 1Gi per container).
+# Memoria: ogni upload usa fino a PartUploadConcurrency x PartSize = 64Mi.
+resources:
+  requests:
+    cpu: 50m
+    memory: 128Mi
+  limits:
+    cpu: 500m
+    memory: 512Mi
+
+# Uscita limitata a DNS, Pooler e Garage: in dev si scopre subito se un flusso manca.
+networkPolicy:
+  enabled: true
+
+plikd:
+  # File più piccoli e scadenze brevi: dev serve per provare, non per conservare.
+  MaxFileSizeStr: "1GB"
+  DefaultTTLStr: "1d"
+  MaxTTLStr: "7d"
