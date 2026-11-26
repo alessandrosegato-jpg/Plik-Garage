@@ -9,9 +9,15 @@ metadata:
     app.kubernetes.io/name: garage-bootstrap
     app.kubernetes.io/part-of: plik
   annotations:
-    # Argo CD lo lancia DOPO ogni sync riuscito, cancellando prima quello vecchio:
-    # così a ogni sync il bootstrap viene ripetuto (ed è innocuo farlo).
-    argocd.argoproj.io/hook: PostSync
+    # Hook "Sync" nella stessa wave di Garage (0), non PostSync: Argo CD lancia i
+    # PostSync solo quando tutte le risorse sono Healthy, ma Garage diventa Ready
+    # solo DOPO che questo job ha applicato il layout. Con PostSync si bloccherebbero
+    # a vicenda. Nella wave 0 il job parte insieme a Garage, lo aspetta tramite il
+    # Service headless (publishNotReadyAddresses) e Argo CD considera la wave finita
+    # quando Garage è Ready e il job è completato. Plik (wave 2) parte dopo.
+    # A ogni sync il job viene ricreato (BeforeHookCreation): è idempotente.
+    argocd.argoproj.io/hook: Sync
+    argocd.argoproj.io/sync-wave: "0"
     argocd.argoproj.io/hook-delete-policy: BeforeHookCreation
 spec:
   backoffLimit: 3               # al massimo 3 nuovi tentativi se lo script fallisce
