@@ -1,0 +1,42 @@
+# Service "normale": è l'indirizzo stabile che usa Plik per S3 (garage:3900).
+# Instrada solo verso pod Ready, cioè nodi Garage che possono servire richieste.
+apiVersion: v1
+kind: Service
+metadata:
+  name: garage
+  labels:
+    app.kubernetes.io/name: garage
+    app.kubernetes.io/part-of: plik
+spec:
+  type: ClusterIP
+  selector:
+    app.kubernetes.io/name: garage
+  ports:
+    - name: s3
+      port: 3900
+      targetPort: s3
+---
+# Service headless: dà a ogni pod un nome DNS fisso (garage-0.garage-headless).
+# Serve al StatefulSet, all'RPC tra nodi e al job di bootstrap.
+# publishNotReadyAddresses: il pod è raggiungibile anche quando non è Ready.
+# Necessario perché un Garage appena nato NON è Ready finché il job non applica
+# il layout: senza questo il job non potrebbe parlargli (uovo e gallina).
+apiVersion: v1
+kind: Service
+metadata:
+  name: garage-headless
+  labels:
+    app.kubernetes.io/name: garage
+    app.kubernetes.io/part-of: plik
+spec:
+  clusterIP: None
+  publishNotReadyAddresses: true
+  selector:
+    app.kubernetes.io/name: garage
+  ports:
+    - name: rpc
+      port: 3901
+      targetPort: rpc
+    - name: admin
+      port: 3903
+      targetPort: admin

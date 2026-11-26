@@ -4,8 +4,21 @@ namespace: plik-dev
 resources:
   - namespace.yaml
   - ../base
+configMapGenerator:
+  - name: garage-config
+    files:
+      - garage.toml
 patches:
   - path: patch-secretstore.yaml
+  - target:
+      labelSelector: app.kubernetes.io/instance=plik
+    patch: |-
+      apiVersion: v1
+      kind: ConfigMap
+      metadata:
+        name: plik
+        annotations:
+          argocd.argoproj.io/sync-wave: "2"
 helmGlobals:
   chartHome: ../charts
 helmCharts:

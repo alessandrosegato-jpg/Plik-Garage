@@ -1,0 +1,33 @@
+apiVersion: postgresql.cnpg.io/v1
+kind: Cluster
+metadata:
+  name: plik-db
+  annotations:
+    argocd.argoproj.io/sync-wave: "0"
+spec:
+  instances: 1                          # dev; prod lo porta a 3 con una patch
+  imageName: ghcr.io/cloudnative-pg/postgresql:17
+
+  bootstrap:
+    initdb:
+      database: plik
+      owner: plik
+      secret:
+        name: plik-db-credentials       # creato dalla ExternalSecret
+
+  # Dev: 4Gi bastano per i metadati di Plik (i file stanno su Garage).
+  # Quota di storage del namespace 10Gi = Postgres 4Gi + Garage meta 1Gi + data 5Gi.
+  storage:
+    storageClass: lvms-vg1
+    size: 4Gi
+
+  resources:                            # coerenti con quota e LimitRange
+    requests:
+      cpu: 250m
+      memory: 512Mi
+    limits:
+      cpu: "1"
+      memory: 1Gi
+
+  monitoring:
+    enablePodMonitor: true              # metriche sulla porta 9187 (fase 3)

@@ -1,0 +1,24 @@
+apiVersion: postgresql.cnpg.io/v1
+kind: Pooler
+metadata:
+  name: plik-db-pooler-rw               # questo diventa il nome del Service
+  annotations:
+    argocd.argoproj.io/sync-wave: "0"
+spec:
+  cluster:
+    name: plik-db
+  instances: 1                          # dev; prod lo porta a 2
+  type: rw                              # punta al primario
+  pgbouncer:
+    poolMode: session
+  template:
+    spec:
+      containers:
+        - name: pgbouncer
+          resources:
+            requests:
+              cpu: 50m
+              memory: 64Mi
+            limits:
+              cpu: 200m
+              memory: 128Mi
