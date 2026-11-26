@@ -48,13 +48,13 @@ spec:
               value: /etc/garage/garage.toml
             - name: GARAGE_RPC_SECRET
               valueFrom:
-                secretKeyRef: {name: garage, key: rpc-secret}
+                secretKeyRef: {name: garage-secrets, key: rpc_secret}
             - name: GARAGE_ADMIN_TOKEN
               valueFrom:
-                secretKeyRef: {name: garage, key: admin-token}
+                secretKeyRef: {name: garage-secrets, key: admin_token}
             - name: GARAGE_METRICS_TOKEN
               valueFrom:
-                secretKeyRef: {name: garage, key: metrics-token}
+                secretKeyRef: {name: garage-secrets, key: metrics_token}
           ports:
             - {name: s3, containerPort: 3900}
             - {name: rpc, containerPort: 3901}
@@ -71,9 +71,12 @@ spec:
             httpGet: {path: /health, port: admin}
             periodSeconds: 10
             failureThreshold: 3
+          # Dimensionate per dev, dentro ResourceQuota (requests 1 CPU/2Gi, limits 3 CPU/3Gi)
+          # e LimitRange (max 1 CPU/1Gi per container). Limite CPU esplicito: senza,
+          # la LimitRange ne mette uno di default (250m) che non si vede nel repo.
           resources:
-            requests: {cpu: 100m, memory: 256Mi}
-            limits: {memory: 1Gi}
+            requests: {cpu: 100m, memory: 128Mi}
+            limits: {cpu: 500m, memory: 512Mi}
           securityContext:
             allowPrivilegeEscalation: false
             readOnlyRootFilesystem: true
@@ -89,18 +92,24 @@ spec:
           configMap:
             name: garage-config     # generato dall'overlay (dev/garage.toml)
         - name: tmp
-          emptyDir: {}
+          emptyDir:
+            sizeLimit: 64Mi
+  # Volumi dimensionati per dev, dentro la quota di storage del namespace (10Gi in totale,
+  # condivisi con il PVC di PostgreSQL) e sotto il massimo della LimitRange (20Gi per PVC).
+  # Se cambia "data", va cambiato anche GARAGE_CAPACITY_BYTES nel job di bootstrap.
   volumeClaimTemplates:
     - metadata:
-        name: meta                  # DB LMDB dei metadati: piccolo ma critico
+        name: meta                  # DB dei metadati: piccolo ma critico
       spec:
         accessModes: ["ReadWriteOnce"]
+        storageClassName: lvms-vg1
         resources:
           requests: {storage: 1Gi}
     - metadata:
         name: data                  # blocchi dei file caricati su Plik
       spec:
         accessModes: ["ReadWriteOnce"]
+        storageClassName: lvms-vg1
         resources:
-          requests: {storage: 10Gi}
+          requests: {storage: 5Gi}
 

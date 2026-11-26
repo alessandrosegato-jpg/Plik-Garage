@@ -142,7 +142,7 @@ def apply_layout():
 
 
 def ensure_key():
-    """4. Importa la chiave di Plik (presa dal Secret s3) se Garage non la conosce."""
+    """4. Importa la chiave di Plik (presa dal Secret garage-plik-key) se Garage non la conosce."""
     try:
         api("GET", f"/v2/GetKeyInfo?id={KEY_ID}")
         log(f"chiave {KEY_ID} già presente: niente da fare")

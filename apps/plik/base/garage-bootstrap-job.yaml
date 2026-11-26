@@ -38,24 +38,25 @@ spec:
           env:
             - name: GARAGE_ADMIN_TOKEN
               valueFrom:
-                secretKeyRef: {name: garage, key: admin-token}
+                secretKeyRef: {name: garage-secrets, key: admin_token}
             - name: PLIK_ACCESS_KEY_ID
               valueFrom:
-                secretKeyRef: {name: s3, key: access-key-id}
+                secretKeyRef: {name: garage-plik-key, key: access_key_id}
             - name: PLIK_SECRET_ACCESS_KEY
               valueFrom:
-                secretKeyRef: {name: s3, key: secret-access-key}
+                secretKeyRef: {name: garage-plik-key, key: secret_access_key}
             - name: GARAGE_REPLICAS         # deve coincidere con le repliche del StatefulSet
               value: "1"
-            - name: GARAGE_CAPACITY_BYTES   # spazio offerto da ogni nodo (PVC data da 10Gi)
-              value: "10000000000"
+            - name: GARAGE_CAPACITY_BYTES   # spazio offerto da ogni nodo: un po' meno del PVC data (5Gi)
+              value: "5000000000"
             - name: GARAGE_ZONE
               value: dc1
             - name: GARAGE_BUCKET
               value: plik
+          # Limite CPU esplicito: senza, la LimitRange ne mette uno di default (250m).
           resources:
             requests: {cpu: 50m, memory: 64Mi}
-            limits: {memory: 128Mi}
+            limits: {cpu: 200m, memory: 128Mi}
           securityContext:
             allowPrivilegeEscalation: false
             readOnlyRootFilesystem: true

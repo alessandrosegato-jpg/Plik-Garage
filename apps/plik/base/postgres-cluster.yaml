@@ -15,9 +15,11 @@ spec:
       secret:
         name: plik-db-credentials       # creato dalla ExternalSecret
 
+  # Dev: 4Gi bastano per i metadati di Plik (i file stanno su Garage).
+  # Quota di storage del namespace 10Gi = Postgres 4Gi + Garage meta 1Gi + data 5Gi.
   storage:
     storageClass: lvms-vg1
-    size: 10Gi
+    size: 4Gi
 
   resources:                            # coerenti con quota e LimitRange
     requests:
