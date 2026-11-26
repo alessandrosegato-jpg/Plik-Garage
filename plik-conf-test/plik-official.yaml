@@ -1,0 +1,38 @@
+apiVersion: v1
+kind: Pod
+metadata:
+  name: plik-official
+  annotations:
+    openshift.io/required-scc: restricted-v2
+spec:
+  automountServiceAccountToken: false
+  securityContext:
+    seccompProfile:
+      type: RuntimeDefault
+  containers:
+    - name: plik
+      image: docker.io/rootgg/plik:1.4.3
+      ports:
+        - name: http
+          containerPort: 8080
+      securityContext:
+        runAsNonRoot: true
+        allowPrivilegeEscalation: false
+        readOnlyRootFilesystem: true
+        capabilities:
+          drop: ["ALL"]
+      env:
+        - name: PLIKD_DATA_BACKEND_CONFIG
+          value: '{"Directory":"/data/files"}'
+        - name: PLIKD_METADATA_BACKEND_CONFIG
+          value: '{"Driver":"sqlite3","ConnectionString":"/data/plik.db"}'
+      volumeMounts:
+        - name: data
+          mountPath: /data
+      readinessProbe:
+        httpGet:
+          path: /health
+          port: http
+  volumes:
+    - name: data
+      emptyDir: {}
