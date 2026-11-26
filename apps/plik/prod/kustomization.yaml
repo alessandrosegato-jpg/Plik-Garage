@@ -23,3 +23,7 @@ helmCharts:
     releaseName: plik
     namespace: plik-prod
     valuesFile: values-plik.yaml
+images:
+  - name: rootgg/plik
+    newName: docker.io/rootgg/plik
+    digest: sha256:114ed0bd4339032af50aa578091ead8b9ecb25290b38775f7fb4948c376b905b
