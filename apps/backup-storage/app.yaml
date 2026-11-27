@@ -1,0 +1,37 @@
+# Storage S3 PROVVISORIO per i backup di PostgreSQL di prod (task 2.6).
+#
+# ATTENZIONE: NON è uno storage esterno. Sta sullo stesso nodo e sullo stesso disco
+# del database, quindi NON protegge da un guasto del nodo o del disco (ADR 0004).
+# Serve solo a costruire e provare backup (2.6) e ripristino (2.8) finché non c'è
+# uno storage S3 fuori dal cluster. Per passare a quello vero cambiano solo:
+#   - endpoint, regione e chiavi in Vault (plik-prod/backup)
+#   - endpointURL e destinationPath in apps/plik/prod/backup-pg-objectstore.yaml
+# e poi questa Application si può togliere.
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: backup-storage
+  namespace: openshift-gitops
+  annotations:
+    argocd.argoproj.io/sync-wave: "4"     # dopo vault (3), prima di plik-prod (5)
+spec:
+  project: default
+  source:
+    repoURL: https://github.com/alessandrosegato-jpg/Plik-Garage.git
+    targetRevision: main
+    path: apps/backup-storage
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: backup-storage
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    syncOptions:
+      - SkipDryRunOnMissingResource=true
+    retry:
+      limit: 5
+      backoff:
+        duration: 10s
+        factor: 2
+        maxDuration: 3m

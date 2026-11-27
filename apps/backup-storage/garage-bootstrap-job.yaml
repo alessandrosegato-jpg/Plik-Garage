@@ -1,0 +1,78 @@
+# Job che configura il Garage di backup: layout, chiave S3 di Barman, bucket "pg-backup" e permessi.
+# La logica sta in garage-bootstrap.py (ConfigMap generato dalla kustomization).
+# È idempotente: si può rieseguire quante volte si vuole.
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: garage-bootstrap
+  labels:
+    app.kubernetes.io/name: garage-bootstrap
+    app.kubernetes.io/part-of: backup-storage
+  annotations:
+    # Hook "Sync" nella stessa wave di Garage (0), non PostSync: Argo CD lancia i
+    # PostSync solo quando tutte le risorse sono Healthy, ma Garage diventa Ready
+    # solo DOPO che questo job ha applicato il layout. Con PostSync si bloccherebbero
+    # a vicenda. Nella wave 0 il job parte insieme a Garage, lo aspetta tramite il
+    # Service headless (publishNotReadyAddresses) e Argo CD considera la wave finita
+    # quando Garage è Ready e il job è completato.
+    # A ogni sync il job viene ricreato (BeforeHookCreation): è idempotente.
+    argocd.argoproj.io/hook: Sync
+    argocd.argoproj.io/sync-wave: "0"
+    argocd.argoproj.io/hook-delete-policy: BeforeHookCreation
+spec:
+  backoffLimit: 3               # al massimo 3 nuovi tentativi se lo script fallisce
+  activeDeadlineSeconds: 900    # oltre 15 minuti il job viene fermato
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: garage-bootstrap
+        app.kubernetes.io/part-of: backup-storage
+    spec:
+      serviceAccountName: garage-bootstrap
+      automountServiceAccountToken: false
+      restartPolicy: Never      # ogni tentativo è un pod nuovo: i log restano consultabili
+      securityContext:
+        runAsNonRoot: true
+        seccompProfile:
+          type: RuntimeDefault
+      containers:
+        - name: bootstrap
+          # UBI 9 con Python 3.12 di Red Hat. Da bloccare per digest:
+          #   skopeo inspect docker://registry.access.redhat.com/ubi9/python-312:latest | jq -r .Digest
+          image: registry.access.redhat.com/ubi9/python-312:latest
+          command: ["python3", "/scripts/garage-bootstrap.py"]
+          env:
+            - name: GARAGE_ADMIN_TOKEN
+              valueFrom:
+                secretKeyRef: {name: garage-secrets, key: admin_token}
+            - name: PLIK_ACCESS_KEY_ID
+              valueFrom:
+                secretKeyRef: {name: garage-plik-key, key: access_key_id}
+            - name: PLIK_SECRET_ACCESS_KEY
+              valueFrom:
+                secretKeyRef: {name: garage-plik-key, key: secret_access_key}
+            - name: GARAGE_REPLICAS         # deve coincidere con le repliche del StatefulSet
+              value: "1"
+            - name: GARAGE_CAPACITY_BYTES   # spazio offerto da ogni nodo: un po' meno del PVC data (5Gi)
+              value: "5000000000"
+            - name: GARAGE_ZONE
+              value: dc1
+            - name: GARAGE_BUCKET
+              value: pg-backup
+            - name: GARAGE_KEY_NAME
+              value: barman
+          # Limite CPU esplicito: senza, la LimitRange ne mette uno di default (250m).
+          resources:
+            requests: {cpu: 50m, memory: 64Mi}
+            limits: {cpu: 200m, memory: 128Mi}
+          securityContext:
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            capabilities:
+              drop: ["ALL"]
+          volumeMounts:
+            - {name: scripts, mountPath: /scripts, readOnly: true}
+      volumes:
+        - name: scripts
+          configMap:
+            name: garage-bootstrap-script
