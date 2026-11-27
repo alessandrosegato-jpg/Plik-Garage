@@ -7,6 +7,8 @@ resources:
 patches:
   - path: patch-quota.yaml
   - path: patch-secretstore.yaml
+  - path: patch-postgres.yaml
+  - path: patch-pooler.yaml
   - target:
       labelSelector: app.kubernetes.io/instance=plik
     patch: |-

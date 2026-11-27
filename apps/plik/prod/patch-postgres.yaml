@@ -3,15 +3,24 @@ kind: Cluster
 metadata:
   name: plik-db
 spec:
+  # Prod: 1 primario + 2 repliche in streaming. Se il primario muore,
+  # CloudNativePG promuove la replica più aggiornata (failover automatico).
   instances: 3
+
+  # Replica sincrona (equivale a minSyncReplicas: 1): il primario conferma un COMMIT
+  # solo dopo che almeno una delle due repliche l'ha ricevuto e scritto su disco.
+  # Così un failover non perde transazioni confermate. Con "any" basta una qualunque
+  # delle due: se una replica è giù, l'altra continua a confermare e le scritture
+  # non si bloccano. Si bloccherebbero solo con entrambe le repliche giù
+  # (dataDurability "required", il default di CloudNativePG).
   postgresql:
-    synchronous:          # almeno una replica sincrona
+    synchronous:
       method: any
       number: 1
----
-apiVersion: postgresql.cnpg.io/v1
-kind: Pooler
-metadata:
-  name: plik-db-pooler-rw
-spec:
-  instances: 2
+
+  # Anti-affinity preferita: con più nodi le istanze andrebbero su nodi diversi;
+  # sul nodo singolo stanno comunque insieme senza restare in Pending (ADR 0004).
+  affinity:
+    enablePodAntiAffinity: true
+    topologyKey: kubernetes.io/hostname
+    podAntiAffinityType: preferred
