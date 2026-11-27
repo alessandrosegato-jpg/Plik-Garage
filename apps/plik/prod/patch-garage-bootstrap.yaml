@@ -1,0 +1,14 @@
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: garage-bootstrap
+spec:
+  template:
+    spec:
+      containers:
+        - name: bootstrap
+          env:
+            - name: GARAGE_REPLICAS
+              value: "3"
+            - name: GARAGE_CAPACITY_BYTES
+              value: "7000000000"

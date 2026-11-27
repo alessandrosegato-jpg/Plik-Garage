@@ -8,6 +8,8 @@ resources:
   - backup-pg-objectstore.yaml
   - backup-pg-scheduledbackup.yaml
 patches:
+  - path: patch-garage-bootstrap.yaml
+  - path: patch-garage.yaml
   - path: patch-quota.yaml
   - path: patch-secretstore.yaml
   - path: patch-postgres.yaml

@@ -1,9 +1,9 @@
 metadata_dir = "/var/lib/garage/meta"
 data_dir = "/var/lib/garage/data"
-db_engine = "lmdb"
+db_engine = "sqlite"
 metadata_auto_snapshot_interval = "6h"
 
-replication_factor = 1
+replication_factor = 3
 consistency_mode = "consistent"
 rpc_bind_addr = "0.0.0.0:3901"
 
