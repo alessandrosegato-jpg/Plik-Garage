@@ -3,4 +3,3 @@ kind: Kustomization
 resources:
   - pipeline-subscription.yaml
   - eso-subscription.yaml
-  - cnpg-subscription.yaml
