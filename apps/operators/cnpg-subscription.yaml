@@ -12,4 +12,4 @@ spec:
   source: certified-operators           # catalogo (diverso da ESO!)
   sourceNamespace: openshift-marketplace
   channel: stable-v1
-  installPlanApproval: Automatic
+  installPlanApproval: Manual
