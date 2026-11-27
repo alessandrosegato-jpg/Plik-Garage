@@ -1,14 +1,34 @@
+# ResourceQuota di plik-prod, dimensionata sullo stato finale delle fasi 2-3:
+#   PostgreSQL 3 istanze (2.3), Pooler 2 pod, Garage 3 nodi (2.4),
+#   Plik fino a 6 repliche con l'HPA (2.1), job di bootstrap,
+#   più margine per: 1 pod in più durante i rollout di Plik, 1 job di CloudNativePG
+#   (join di una replica o backup), sidecar del plugin Barman (2.6), CronJob rclone (2.7).
+#
+#                       requests            limits             storage   pod
+#   Postgres x3         750m  1.5Gi         3     3Gi          12Gi      3
+#   Pooler x2           100m  128Mi         400m  256Mi                  2
+#   Garage x3           300m  384Mi         1.5   1.5Gi        18Gi      3
+#   Job bootstrap        50m   64Mi         200m  128Mi                  1
+#   Plik x6 (HPA max)   1.2   1.5Gi         6     3Gi                    6
+#   Rollout Plik +1     200m  256Mi         1     512Mi                  1
+#   Job CNPG             250m 512Mi         1     1Gi                    1
+#   Sidecar Barman x3   150m  192Mi         750m  768Mi
+#   CronJob rclone       50m   64Mi         250m  256Mi                  1
+#   Totale              ~3.1  ~4.6Gi        ~14.1 ~10.4Gi      30Gi      19
+#
+# Le requests devono stare nella capacità allocabile del nodo (insieme a dev, Vault e
+# alla piattaforma); i limits possono superarla (overcommit), ma qui fanno da tetto.
 apiVersion: v1
 kind: ResourceQuota
 metadata:
   name: plik-quota
 spec:
   hard:
-    requests.cpu: "3"
-    requests.memory: 5Gi
-    limits.cpu: "10"
-    limits.memory: 8Gi
+    requests.cpu: "4"
+    requests.memory: 6Gi
+    limits.cpu: "15"
+    limits.memory: 12Gi
     persistentvolumeclaims: "12"
-    requests.storage: 20Gi
-    lvms-vg1.storageclass.storage.k8s.io/requests.storage: 20Gi
-    pods: "15"
+    requests.storage: 40Gi
+    lvms-vg1.storageclass.storage.k8s.io/requests.storage: 40Gi
+    pods: "20"
