@@ -1,0 +1,14 @@
+# Archiviazione continua dei WAL: ogni segmento WAL chiuso viene caricato
+# sull'ObjectStore plik-backup dal sidecar del plugin Barman.
+# Se l'archiviazione fallisce, i WAL restano sul disco di Postgres finché non
+# riesce: uno storage irraggiungibile a lungo può riempire il PVC (alert, task 3.3).
+apiVersion: postgresql.cnpg.io/v1
+kind: Cluster
+metadata:
+  name: plik-db
+spec:
+  plugins:
+    - name: barman-cloud.cloudnative-pg.io
+      isWALArchiver: true
+      parameters:
+        barmanObjectName: plik-backup

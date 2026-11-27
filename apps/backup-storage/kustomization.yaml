@@ -1,0 +1,21 @@
+# Garage a un nodo, provvisorio, per i backup di PostgreSQL di prod. Vedi app.yaml.
+# I file di Garage sono copie di quelli di apps/plik/base (Kustomize non permette di
+# includere singoli file fuori da questa cartella).
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+namespace: backup-storage
+resources:
+  - namespace.yaml
+  - networkpolicy.yaml
+  - secrets.yaml
+  - garage-rbac.yaml
+  - garage-service.yaml
+  - garage-statefulset.yaml
+  - garage-bootstrap-job.yaml
+configMapGenerator:
+  - name: garage-config
+    files:
+      - garage.toml
+  - name: garage-bootstrap-script
+    files:
+      - garage-bootstrap.py

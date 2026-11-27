@@ -1,0 +1,28 @@
+# Identità dedicate per Garage e per il job di bootstrap.
+#
+# Minimo privilegio: nessuno dei due ha bisogno dell'API Kubernetes, quindi
+# NON ci sono Role/RoleBinding e il token non viene montato nei pod.
+# - Garage non usa la kubernetes_discovery (richiederebbe una CRD a livello
+#   cluster e permessi di scrittura): con più nodi sarà il job di bootstrap a
+#   collegarli tramite admin API e i nomi DNS del Service headless.
+# - Il job legge i segreti come variabili d'ambiente, non tramite l'API.
+#
+# Nessun binding a SCC: entrambi i ServiceAccount ricadono su restricted-v2
+# (vietate anyuid/privileged dalle regole del progetto).
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: garage
+  labels:
+    app.kubernetes.io/name: garage
+    app.kubernetes.io/part-of: backup-storage
+automountServiceAccountToken: false
+---
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: garage-bootstrap
+  labels:
+    app.kubernetes.io/name: garage-bootstrap
+    app.kubernetes.io/part-of: backup-storage
+automountServiceAccountToken: false

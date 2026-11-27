@@ -1,0 +1,41 @@
+# Dove il plugin Barman salva base backup e WAL di plik-db.
+#
+# PROVVISORIO: punta al Garage interno del namespace backup-storage, che NON è uno
+# storage esterno (vedi apps/backup-storage/app.yaml). Con uno storage vero cambiano
+# endpointURL e destinationPath qui, e i valori in Vault (plik-prod/backup).
+apiVersion: barmancloud.cnpg.io/v1
+kind: ObjectStore
+metadata:
+  name: plik-backup
+  annotations:
+    argocd.argoproj.io/sync-wave: "-1"    # prima del Cluster (0), che lo usa
+spec:
+  # Base backup e WAL più vecchi di 14 giorni vengono cancellati.
+  # Si può ripristinare a qualunque istante degli ultimi 14 giorni.
+  retentionPolicy: "14d"
+  configuration:
+    destinationPath: s3://pg-backup/plik-prod
+    endpointURL: http://garage.backup-storage.svc:3900
+    s3Credentials:
+      accessKeyId:
+        name: backup-s3
+        key: access_key_id
+      secretAccessKey:
+        name: backup-s3
+        key: secret_access_key
+      region:
+        name: backup-s3
+        key: region
+    wal:
+      compression: gzip
+    data:
+      compression: gzip
+  # Sidecar che il plugin aggiunge a ogni pod Postgres (3 in prod): contati nella quota.
+  instanceSidecarConfiguration:
+    resources:
+      requests:
+        cpu: 50m
+        memory: 64Mi
+      limits:
+        cpu: 250m
+        memory: 256Mi
